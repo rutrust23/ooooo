@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генетик | Биотехнологии будущего</title>
+    <style>
+        /* --- БАЗОВЫЕ СТИЛИ И ШРИФТЫ --- */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Syncopate:wght@400;700&display=swap');
+
+        :root {
+            --bg-color: #050505;
+            --text-main: #e0e0e0;
+            --text-dim: #888;
+            --accent: #00ffcc;
+            --accent-dim: rgba(0, 255, 204, 0.2);
+            --font-display: 'Syncopate', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            line-height: 1.6;
+            cursor: none; /* Скрываем стандартный курсор */
+        }
+
+        /* --- КАСТОМНЫЙ КУРСОР --- */
+        .cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            border: 1px solid var(--accent);
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s, background-color 0.3s;
+            z-index: 9999;
+            mix-blend-mode: difference;
+        }
+        .cursor-dot {
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            background-color: var(--accent);
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+        }
+        body:hover .cursor { width: 40px; height: 40px; background-color: rgba(0, 255, 204, 0.1); }
+
+        /* --- CANVAS ФОН (ДНК / НЕЙРОСЕТЬ) --- */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            opacity: 0.4;
+        }
+
+        /* --- ОБЩИЕ УТИЛИТЫ --- */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 40px;
+        }
+
+        .section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* --- ТИПОГРАФИКА --- */
+        h1, h2, h3 {
+            font-family: var(--font-display);
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .huge-title {
+            font-size: clamp(3rem, 8vw, 8rem);
+            line-height: 0.9;
+            letter-spacing: -0.03em;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+        }
+
+        .section-title {
+            font-size: 1rem;
+            color: var(--accent);
+            letter-spacing: 0.2em;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .section-title::before {
+            content: '';
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background-color: var(--accent);
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        p {
+            font-size: 1.1rem;
+            color: var(--text-dim);
+            max-width: 600px;
+            font-weight: 300;
+        }
+
+        /* --- ГЛАВНЫЙ ЭКРАН --- */
+        .hero {
+            padding-top: 100px;
+        }
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+        .hero-subtitle {
+            font-family: var(--font-body);
+            font-size: 1.2rem;
+            max-width: 500px;
+            margin-top: 30px;
+            border-left: 2px solid var(--accent);
+            padding-left: 20px;
+        }
+
+        /* --- СЕКЦИЯ: ЧЕМ ЗАНИМАЮТСЯ --- */
+        .tasks-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 50px;
+        }
+        .task-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 40px;
+            border-radius: 2px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.5s, border-color 0.5s;
+            backdrop-filter: blur(10px);
+        }
+        .task-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-10px);
+        }
+        .task-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        .task-card p {
+            font-size: 0.95rem;
+        }
+        .task-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--accent);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.5s;
+        }
+        .task-card:hover::after {
+            transform: scaleX(1);
+        }
+
+        /* --- СЕКЦИЯ: ГДЕ РАБОТАЮТ --- */
+        .where-list {
+            list-style: none;
+            margin-top: 50px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .where-list li {
+            padding: 30px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-size: 1.5rem;
+            font-family: var(--font-display);
+            color: var(--text-main);
+            display: flex;
+            justify-content: space-between;
+            transition: color 0.3s, padding-left 0.3s;
+        }
+        .where-list li:hover {
+            color: var(--accent);
+            padding-left: 20px;
+        }
+        .where-list li span {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            color: var(--text-dim);
+            align-self: center;
+        }
+
+        /* --- СЕКЦИЯ: ЗАРПЛАТА --- */
+        .salary-block {
+            background: linear-gradient(135deg, rgba(0,255,204,0.05) 0%, transparent 100%);
+            border: 1px solid var(--accent-dim);
+            padding: 60px;
+            margin-top: 50px;
+            position: relative;
+        }
+        .salary-number {
+            font-family: var(--font-display);
+            font-size: clamp(3rem, 6vw, 5rem);
+            color: var(--accent);
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+        .salary-desc {
+            font-size: 1rem;
+            color: var(--text-dim);
+        }
+
+        /* --- СЕКЦИЯ: ГДЕ УЧАТ --- */
+        .uni-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin-top: 50px;
+        }
+        .uni-card {
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 30px;
+            transition: background 0.3s, border-color 0.3s;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        .uni-card:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: var(--accent);
+        }
+        .uni-card h4 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #fff;
+            transition: color 0.3s;
+        }
+        .uni-card:hover h4 {
+            color: var(--accent);
+        }
+        .uni-card p {
+            font-size: 0.9rem;
+        }
+
+        /* --- ПОДВАЛ --- */
+        footer {
+            padding: 40px 0;
+            text-align: center;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.8rem;
+            color: #555;
+            letter-spacing: 0.1em;
+        }
+
+        /* --- АДАПТИВ --- */
+        @media (max-width: 768px) {
+            .tasks-grid, .uni-grid { grid-template-columns: 1fr; }
+            .where-list li { flex-direction: column; gap: 10px; }
+            body { cursor: auto; }
+            .cursor, .cursor-dot { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Кастомный курсор -->
+    <div class="cursor"></div>
+    <div class="cursor-dot"></div>
+
+    <!-- Фоновый Canvas -->
+    <canvas id="bg-canvas"></canvas>
+
+    <main>
+        <!-- ГЛАВНЫЙ ЭКРАН -->
+        <section class="section hero container">
+            <div class="hero-content reveal">
+                <div class="section-title">Биоинженерия / 2026</div>
+                <h1 class="huge-title">ГЕНЕТИК</h1>
+                <div class="hero-subtitle">
+                    Специалист, который расшифровывает код жизни. Исследует наследственность, изменяет ДНК и создает будущее медицины.
+                </div>
+            </div>
+        </section>
+
+        <!-- ЧЕМ ЗАНИМАЮТСЯ -->
+        <section class="section container">
+            <div class="reveal">
+                <div class="section-title">01 / Функции</div>
+                <h2>Чем занимаются</h2>
+                <p>Генетики работают на стыке биологии, химии и математики. Их главная задача — понять, как передаются признаки, и найти способы исправлять ошибки в геноме.</p>
+                
+                <div class="tasks-grid">
+                    <div class="task-card">
+                        <h3>Секвенирование</h3>
+                        <p>Расшифровка последовательности ДНК для выявления мутаций, наследственных заболеваний и предрасположенностей.</p>
+                    </div>
+                    <div class="task-card">
+                        <h3>Редактирование генома</h3>
+                        <p>Использование технологий CRISPR/Cas9 для точечного изменения генов с целью лечения болезней.</p>
+                    </div>
+                    <div class="task-card">
+                        <h3>Генетическая диагностика</h3>
+                        <p>Проведение анализов для планирования семьи, пренатальной диагностики и подбора персонализированной терапии.</p>
+                    </div>
+                    <div class="task-card">
+                        <h3>Биоинформатика</h3>
+                        <p>Обработка огромных массивов данных с помощью алгоритмов и искусственного интеллекта для поиска закономерностей.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ГДЕ РАБОТАЮТ -->
+        <section class="section container">
+            <div class="reveal">
+                <div class="section-title">02 / Локации</div>
+                <h2>Где работают</h2>
+                <ul class="where-list">
+                    <li>Научно-исследовательские институты <span>Фундаментальная наука</span></li>
+                    <li>Лаборатории фармкомпаний <span>Разработка препаратов</span></li>
+                    <li>Центры репродуктивной медицины <span>Клиническая практика</span></li>
+                    <li>Агробиотехнологические компании <span>Селекция растений</span></li>
+                    <li>Криминалистические лаборатории <span>Судебная экспертиза</span></li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ЗАРАБОТНАЯ ПЛАТА -->
+        <section class="section container">
+            <div class="reveal">
+                <div class="section-title">03 / Доход</div>
+                <h2>Заработная плата</h2>
+                <div class="salary-block">
+                    <div class="salary-number">от 120 000 ₽</div>
+                    <div class="salary-desc">Средняя заработная плата по России в месяц (2026 г.)</div>
+                    <p style="margin-top: 20px; font-size: 0.9rem;">
+                        * Опытные специалисты в области биоинформатики и клинической генетики могут зарабатывать от 250 000 ₽. Доход зависит от региона, компании и наличия публикаций.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ГДЕ УЧАТ -->
+        <section class="section container">
+            <div class="reveal">
+                <div class="section-title">04 / Образование</div>
+                <h2>Где учат</h2>
+                <p>Для работы необходимы знания по биологии (ЕГЭ). Ключевые направления: «Генетика», «Биоинженерия и биоинформатика».</p>
+                
+                <div class="uni-grid">
+                    <a href="https://www.msu.ru" target="_blank" rel="noopener noreferrer" class="uni-card">
+                        <h4>МГУ им. М.В. Ломоносова ↗</h4>
+                        <p>Факультет биоинженерии и биоинформатики. Ведущий центр подготовки генетиков.</p>
+                    </a>
+                    <a href="https://www.sechenov.ru" target="_blank" rel="noopener noreferrer" class="uni-card">
+                        <h4>Первый МГМУ им. И.М. Сеченова ↗</h4>
+                        <p>Институт биологии и патологии человека. Клиническая генетика.</p>
+                    </a>
+                    <a href="https://spbu.ru" target="_blank" rel="noopener noreferrer" class="uni-card">
+                        <h4>СПбГУ ↗</h4>
+                        <p>Биологический факультет. Кафедра генетики и биотехнологии.</p>
+                    </a>
+                    <a href="https://www.rudn.ru" target="_blank" rel="noopener noreferrer" class="uni-card">
+                        <h4>РУДН ↗</h4>
+                        <p>Медицинский институт. Медицинская генетика и генетическое консультирование.</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            БИОЛОГИЯ / ЗАДАНИЕ НА «5» / 2026
+        </div>
+    </footer>
+
+    <script>
+        // --- 1. АНИМАЦИЯ ПОЯВЛЕНИЯ ПРИ СКРОЛЛЕ ---
+        const revealElements = document.querySelectorAll('.reveal');
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, { threshold: 0.1 });
+        revealElements.forEach(el => revealObserver.observe(el));
+
+        // --- 2. КАСТОМНЫЙ КУРСОР С ИНЕРЦИЕЙ ---
+        const cursor = document.querySelector('.cursor');
+        const cursorDot = document.querySelector('.cursor-dot');
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+        let cursorX = mouseX;
+        let cursorY = mouseY;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            // Точка движется мгновенно
+            cursorDot.style.left = mouseX + 'px';
+            cursorDot.style.top = mouseY + 'px';
+        });
+
+        // Плавное движение круга
+        function animateCursor() {
+            let distX = mouseX - cursorX;
+            let distY = mouseY - cursorY;
+            
+            cursorX = cursorX + (distX * 0.15);
+            cursorY = cursorY + (distY * 0.15);
+            
+            cursor.style.left = cursorX + 'px';
+            cursor.style.top = cursorY + 'px';
+            
+            requestAnimationFrame(animateCursor);
+        }
+        animateCursor();
+
+        // --- 3. ФОНОВАЯ АНИМАЦИЯ CANVAS (ДНК / ВОЛНЫ) ---
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let time = 0;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Массив частиц (узлов)
+        const particles = [];
+        const numParticles = 60;
+
+        for (let i = 0; i < numParticles; i++) {
+            particles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                vx: (Math.random() - 0.5) * 0.5,
+                vy: (Math.random() - 0.5) * 0.5,
+                radius: Math.random() * 2 + 1
+            });
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+            time += 0.005;
+
+            // Рисуем соединительные линии (эффект нейросети/ДНК)
+            ctx.strokeStyle = 'rgba(0, 255, 204, 0.15)';
+            ctx.lineWidth = 1;
+
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 150) {
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        // Добавляем волнообразное смещение для эффекта "живой" ДНК
+                        const midX = (particles[i].x + particles[j].x) / 2 + Math.sin(time + i) * 10;
+                        const midY = (particles[i].y + particles[j].y) / 2 + Math.cos(time + j) * 10;
+                        
+                        ctx.quadraticCurveTo(midX, midY, particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Рисуем сами частицы
+            particles.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0, 255, 204, 0.6)';
+                ctx.fill();
+
+                // Движение
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // Отталкивание от краев
+                if (p.x < 0 || p.x > width) p.vx *= -1;
+                if (p.y < 0 || p.y > height) p.vy *= -1;
+            });
+
+            requestAnimationFrame(draw);
+        }
+        draw();
+
+        // --- 4. ПАРАЛЛАКС ЭФФЕКТ ДЛЯ КАРТОЧЕК ---
+        const cards = document.querySelectorAll('.task-card');
+        document.addEventListener('mousemove', (e) => {
+            const x = (window.innerWidth / 2 - e.clientX) / 50;
+            const y = (window.innerHeight / 2 - e.clientY) / 50;
+            
+            cards.forEach(card => {
+                card.style.transform = `translate(${x}px, ${y}px)`;
+            });
+        });
+    </script>
+</body>
+</html>
